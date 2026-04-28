@@ -1,0 +1,65 @@
+{
+  "compressors": {
+    "compressor_1": {
+      "max_pressure_psi": 102.74,
+      "rated_pressure_psi": 100.02,
+      "max_flow_cfm": 474.9,
+      "min_flow_cfm": null,
+      "max_power_kw": 135.68,
+      "min_power_kw": 18.16,
+      "max_oil_temp_c": 93.2,
+      "min_oil_temp_c": 30.0,
+      "rated_power_kw": 110.0,
+      "rated_flow_cfm": 450.0,
+      "hp": 147.5
+    },
+    "compressor_2": {
+      "max_pressure_psi": 102.62,
+      "rated_pressure_psi": 100.0,
+      "max_flow_cfm": 476.7,
+      "min_flow_cfm": null,
+      "max_power_kw": 120.8,
+      "min_power_kw": 18.97,
+      "max_oil_temp_c": 103.3,
+      "min_oil_temp_c": 30.0,
+      "rated_power_kw": 110.0,
+      "rated_flow_cfm": 450.0,
+      "hp": 147.5
+    },
+    "compressor_3": {
+      "max_pressure_psi": 110.16,
+      "rated_pressure_psi": 108.0,
+      "max_flow_cfm": 373.6,
+      "min_flow_cfm": 56.4,
+      "max_power_kw": 92.19,
+      "min_power_kw": 24.22,
+      "max_oil_temp_c": 92.0,
+      "min_oil_temp_c": 31.0,
+      "rated_power_kw": 90.0,
+      "rated_flow_cfm": 380.0,
+      "hp": 120.7,
+      "min_rpm": 800,
+      "max_rpm": 3600
+    },
+    "compressor_4": {
+      "max_pressure_psi": 112.77,
+      "rated_pressure_psi": 110.01,
+      "max_flow_cfm": 566.3,
+      "min_flow_cfm": 160.7,
+      "max_power_kw": 144.91,
+      "min_power_kw": 76.35,
+      "max_oil_temp_c": 87.9,
+      "min_oil_temp_c": 30.0,
+      "rated_power_kw": 150.0,
+      "rated_flow_cfm": 600.0,
+      "hp": 201.2,
+      "min_rpm": 4200,
+      "max_rpm": 11000
+    }
+  },
+  "station": {
+    "min_operating_pressure_psi": 89.15,
+    "target_pressure_psi": 95.56,
+    "max_flow_demand_cfm": 1790.8
+  }
+}

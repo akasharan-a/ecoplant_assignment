@@ -1,0 +1,31 @@
+column_name,type,unit,normal_range,notes
+timestamp,datetime,–,2024-01-15 00:00:00 to 2024-01-21 23:58:53,ISO 8601 format
+compressor_1_pressure,float,PSI,98 – 103,Discharge pressure while loaded
+compressor_1_flow,float,CFM,0 (off) / 422 – 475 (loaded),0 when off or unloaded
+compressor_1_power,float,kW,0 (off) / 80 – 117 (loaded),0 when off or unloaded
+compressor_1_activity,categorical,–,"off, unloaded, loaded",Operational state
+compressor_1_oil_temp,float,°C,30 (cold) – 93 (running),Rises from 30°C at startup
+compressor_1_availability,categorical,–,available,Asset availability status
+compressor_2_pressure,float,PSI,98 – 103,Discharge pressure while loaded
+compressor_2_flow,float,CFM,0 (off) / 417 – 477 (loaded),0 when off or unloaded
+compressor_2_power,float,kW,0 (off) / 80 – 121 (loaded),0 when off or unloaded
+compressor_2_activity,categorical,–,"off, unloaded, loaded",Operational state
+compressor_2_oil_temp,float,°C,30 (cold) – 103 (running),Rises from 30°C at startup
+compressor_2_availability,categorical,–,"available, in_maintenance",Asset availability status
+compressor_3_pressure,float,PSI,106 – 110,Always loaded in this dataset
+compressor_3_flow,float,CFM,56 – 374,Continuously running unit
+compressor_3_power,float,kW,24 – 92,Continuously running unit
+compressor_3_activity,categorical,–,loaded,Always loaded in this dataset
+compressor_3_oil_temp,float,°C,31 – 92,Rises from 31°C at start of dataset
+compressor_3_availability,categorical,–,available,Asset availability status
+compressor_4_pressure,float,PSI,106 – 113,Discharge pressure while loaded
+compressor_4_flow,float,CFM,0 (off) / 161 – 566 (loaded),0 when off
+compressor_4_power,float,kW,0 (off) / 80 – 145 (loaded),0 when off
+compressor_4_activity,categorical,–,"off, loaded",Operational state
+compressor_4_bov_position,float,ratio,0.0 – 0.62,"Blow-off valve position (0 = closed, 1 = fully open)"
+compressor_4_oil_temp,float,°C,30 (cold) – 88 (running),Rises from 30°C at startup
+compressor_4_availability,categorical,–,available,Asset availability status
+station_pressure,float,PSI,90 – 120,Aggregate header pressure
+station_flow,float,CFM,56 – 1791,Sum of all active compressor flows
+station_power,float,kW,24 – 448,Sum of all active compressor power draws
+station_specific_power,float,kW/CFM,0.235 – 0.556,Power per unit of air delivered; lower is better. Meaningful only when station_flow > 0
