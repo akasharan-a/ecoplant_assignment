@@ -37,7 +37,7 @@ At a minimum, we'd expect your submission to:
 - [ ] Handle the data thoughtfully (quality, completeness, physical plausibility)
 - [ ] Produce some measure of operational efficiency
 - [ ] Identify and explain anything that looks abnormal
-- [ ] Be callable as a service (an API endpoint or CLI — your choice) - No need for a fancy UI, but it should be easy to run and understand the output
+- [ ] Be callable as a service (an API endpoint) - No need for a fancy UI, but it should be easy to run and understand the output
 - [ ] Include tests that give us confidence the core logic works
 - [ ] Answer the business questions
 - [ ] Include a short write-up explaining your approach, your assumptions, and what you'd do differently with more time
