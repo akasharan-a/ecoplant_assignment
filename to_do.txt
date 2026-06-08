@@ -1,0 +1,7 @@
+1. Initialise fastapi
+2. Load constant data (compressor_specs , data_specification)
+3. Upload station_sensor_data as csv - provide insights
+4. Autmaticlally preprocess the data
+5. create API - that return data quality
+6. create API - output operation efficiency
+7. API - output abnormal data

@@ -1,7 +1,9 @@
 ipykernel
+nbformat
 numpy
 pandas
 scikit-learn
 plotly
 fastapi
 uvicorn
+python-multipart
