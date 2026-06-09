@@ -27,10 +27,13 @@ def preprocess_sensor_data(df: pd.DataFrame,DATA_SPECIFICATION: pd.DataFrame) ->
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         df['timestamp'] = df['timestamp'].dt.round('min')
+        df = df.drop_duplicates(keep="last",subset=['timestamp']).reset_index(drop=True)
+
+        df = df.set_index('timestamp').sort_index()
+        df = df.asfreq('1min')  # Resample to 1-minute intervals, filling in missing timestamps
     else:
         raise ValueError("Missing required 'timestamp' column for preprocessing.")
     
-    df = df.drop_duplicates(keep="last",subset=['timestamp']).reset_index(drop=True)
     # Ensure numeric types and handle missing values (Imputation with median)
     for col, dtype in zip(DATA_SPECIFICATION["column_name"],DATA_SPECIFICATION["type"]):
         if col in df.columns:
@@ -86,18 +89,17 @@ def data_quality_checks(df_sensor: pd.DataFrame, DATA_SPECIFICATION: pd.DataFram
     
     
     # Check Timestamp Range 
-    if 'timestamp' in df_sensor.columns:
-        ts_converted = df_sensor['timestamp'].copy()
-        start_date = pd.to_datetime('2024-01-15 00:00:00') 
-        end_date = pd.to_datetime('2024-01-21 23:58:53')
-        
-        # Out of bounds mask
-        out_of_dates = ts_converted[(ts_converted < start_date) | (ts_converted > end_date) | (ts_converted.isna())]
-        if not out_of_dates.empty:
-            quality_report['timestamp'] = {
-                'issue': 'Out of date window or non-parseable datetime',
-                'count_affected_indices': len(out_of_dates.index.tolist())
-            }
+    ts_converted = df_sensor.index.to_series()
+    start_date = pd.to_datetime('2024-01-15 00:00:00') 
+    end_date = pd.to_datetime('2024-01-21 23:58:53')
+    
+    # Out of bounds mask
+    out_of_dates = ts_converted[(ts_converted < start_date) | (ts_converted > end_date) | (ts_converted.isna())]
+    if not out_of_dates.empty:
+        quality_report['timestamp'] = {
+            'issue': 'Out of date window or non-parseable datetime',
+            'count_affected_indices': len(out_of_dates.index.tolist())
+        }
 
     # Check Numerical Columns 
     for col, validation_func in numerical_bounds.items():

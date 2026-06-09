@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import StreamingResponse
 import uvicorn
+import json
 import pandas as pd
 import io
 from typing import Dict, Any
@@ -11,9 +13,10 @@ from data_ingestion import (
     data_quality_checks,
 )
 from operational_efficiency import (
-    estimate_operational_efficiency,
+    
     calculate_specific_power_windows,
 )
+from anomalies import  detect_anomalies
 
 app = FastAPI(
     title="Compressed Air Operations Intelligence", version="0.1", docs_url="/"
@@ -23,9 +26,9 @@ app = FastAPI(
 COMPRESSOR_SPECS, DATA_SPECIFICATION = load_static_data()
 
 
-@app.get("/")
+@app.get("/status")
 def read_root():
-    return {"message": "App running"}
+    return {"message": "OK"}
 
 
 # 1. Upload station_sensor_data & Provide Insights
@@ -86,25 +89,10 @@ def get_data_quality():
     return data_quality_checks_results
 
 
-# 3. API - Output Operation Efficiency
-@app.get("/operational-efficiency")
-def get_operational_efficiency():
-    if not hasattr(app.state, "df"):
-        raise HTTPException(
-            status_code=400, detail="No data uploaded yet. Please use /upload first."
-        )
 
-    df = app.state.df
-
-    # Calculate overall efficiency metrics (compares sensor data to compressor specs)
-    efficiency_summary = estimate_operational_efficiency(df, COMPRESSOR_SPECS)
-
-    return efficiency_summary
-
-
-# 4. API - Output Windowed Specific Power Analysis
+# 4. API - Output Windowed operational efficiency
 @app.get("/windowed-efficiency")
-def get_windowed_efficiency(window_minutes: int = 60):
+def get_windowed_efficiency(window: str = 'D'):
     """
     Calculate specific power (kW/CFM) for each compressor in time windows.
     Compares actual specific power against rated spec specific power.
@@ -120,68 +108,23 @@ def get_windowed_efficiency(window_minutes: int = 60):
     df = app.state.df
 
     # Calculate windowed specific power analysis
-    windowed_df = calculate_specific_power_windows(
-        df, COMPRESSOR_SPECS, window_minutes=window_minutes
+    window_efficiency = calculate_specific_power_windows(
+        df, COMPRESSOR_SPECS, window=window
     )
 
-    if windowed_df.empty:
-        return {
-            "message": "No windowed efficiency data available.",
-            "window_minutes": window_minutes,
+    if window_efficiency:
+        file_content = open("temp/opr_eff.html", "r").read().encode("utf-8")
+        file_like = io.BytesIO(file_content)
+        metadata_json = json.dumps(window_efficiency)
+        # Custom headers hold your string metadata while the body delivers the file binary
+        headers = {
+            "X-Message-Metadata": metadata_json,  # Embed the efficiency results in a custom header
+            "Content-Disposition": "attachment; filename=operational_efficiency.html"  # Suggests a filename for download
         }
-
-    # Convert results to list of dicts for JSON serialization
-    results = []
-    for _, row in windowed_df.iterrows():
-        results.append(
-            {
-                "compressor_id": row["compressor_id"],
-                "window_start": (
-                    row["window"].isoformat() if pd.notna(row["window"]) else None
-                ),
-                "loaded_records": int(row["loaded_records"]),
-                "avg_specific_power_kw_per_cfm": (
-                    round(row["actual_sp_mean"], 4)
-                    if pd.notna(row["actual_sp_mean"])
-                    else None
-                ),
-                "min_specific_power_kw_per_cfm": (
-                    round(row["actual_sp_min"], 4)
-                    if pd.notna(row["actual_sp_min"])
-                    else None
-                ),
-                "max_specific_power_kw_per_cfm": (
-                    round(row["actual_sp_max"], 4)
-                    if pd.notna(row["actual_sp_max"])
-                    else None
-                ),
-                "std_specific_power": (
-                    round(row["actual_sp_std"], 4)
-                    if pd.notna(row["actual_sp_std"])
-                    else None
-                ),
-                "avg_flow_cfm": (
-                    round(row["flow_mean"], 2) if pd.notna(row["flow_mean"]) else None
-                ),
-                "avg_power_kw": (
-                    round(row["power_mean"], 2) if pd.notna(row["power_mean"]) else None
-                ),
-                "spec_specific_power_kw_per_cfm": (
-                    round(row["spec_specific_power"], 4)
-                    if pd.notna(row["spec_specific_power"])
-                    else None
-                ),
-                "records_above_spec": int(row["records_above_spec"]),
-                "status": row["status"],
-            }
-        )
-
-    return {
-        "window_minutes": window_minutes,
-        "total_windows": len(windowed_df),
-        "windows": results,
-        "notes": "Specific power = Power (kW) / Flow (CFM). Lower is better. Only loaded compressors with positive flow are included.",
-    }
+        
+        return StreamingResponse(file_like, media_type="text/html", headers=headers)
+    else:
+        return {"message": "No valid compressor data found for windowed efficiency analysis."}
 
 
 # 5. API - Output Abnormal Data
@@ -194,23 +137,8 @@ def get_abnormal_data():
 
     df = app.state.df
 
-    # Define anomalies based on constant compressor specs
-    max_p = COMPRESSOR_SPECS["max_pressure_psi"]
-    max_t = COMPRESSOR_SPECS["max_temp_celsius"]
-
-    anomalies = df[
-        (df["pressure"] > max_p)
-        | (df["temperature"] > max_t)
-        | (df["pressure"] < 0)
-        | (df["temperature"] < 0)
-    ]
-
-    return {
-        "total_abnormal_records": len(anomalies),
-        "percentage_abnormal_data": round((len(anomalies) / len(df)) * 100, 2),
-        "abnormal_records": anomalies.to_dict(orient="records"),
-    }
-
+    anomalies = detect_anomalies(df)
+    return anomalies
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
