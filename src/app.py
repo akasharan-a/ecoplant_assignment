@@ -118,7 +118,7 @@ def get_windowed_efficiency(window: str = 'D'):
         metadata_json = json.dumps(window_efficiency)
         # Custom headers hold your string metadata while the body delivers the file binary
         headers = {
-            "X-Message-Metadata": metadata_json,  # Embed the efficiency results in a custom header
+            "Results": metadata_json,  # Embed the efficiency results in a custom header
             "Content-Disposition": "attachment; filename=operational_efficiency.html"  # Suggests a filename for download
         }
         

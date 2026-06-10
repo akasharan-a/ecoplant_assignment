@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
-import plotly.graph_objs as go   
+import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+
 
 def _extract_compressor_specs(compressor_specs: dict) -> dict:
     """
@@ -57,11 +58,15 @@ def calculate_specific_power_windows(
     specs_lookup = _extract_compressor_specs(compressor_specs)
     results = {}
 
-    # Create time windows
-    df["window"] = df["timestamp"].dt.floor(f"{window}")
+    # Normalize hourly frequency strings for pandas, but preserve other valid window codes
+    window = str(window)
+    if window.upper() == "H":
+        window = "h"
+    df["window"] = df["timestamp"].dt.floor(window)
 
     for comp_id, spec_info in specs_lookup.items():
         results[comp_id] = {}
+        results[comp_id]["spec_specific_power"] = spec_info["spec_specific_power"]
         flow_col = f"{comp_id}_flow"
         power_col = f"{comp_id}_power"
         activity_col = f"{comp_id}_activity"
@@ -88,11 +93,9 @@ def calculate_specific_power_windows(
         )
 
         spec_sp = spec_info["spec_specific_power"]
-        
 
         comp_df["spec_specific_power"] = spec_sp
         results[comp_id]["spec_specific_power"] = spec_sp
-
 
         # Mark if above spec (only when loaded with valid actual SP)
         comp_df["above_spec"] = np.where(
@@ -100,8 +103,7 @@ def calculate_specific_power_windows(
             comp_df["actual_specific_power"] > spec_sp,
             False,
         )
-        
-        
+
         # Aggregate by window
         windowed = (
             comp_df.groupby(["window"])
@@ -116,35 +118,59 @@ def calculate_specific_power_windows(
             )
             .reset_index()
         )
-        
+
         windowed = windowed.loc[windowed["is_loaded"] > 0, :].copy()
         results[comp_id]["windowed"] = windowed
-        
 
     plot_efficiency_trends(results)
     results_json = {}
     for comp_id, comp_data in results.items():
         results_json[comp_id] = {
             "spec_specific_power": comp_data["spec_specific_power"]
-            
         }
         if "windowed" in comp_data:
-            comp_data["windowed"]["window"] = comp_data["windowed"]["window"].dt.strftime("%Y-%m-%d %H:%M")
+            comp_data["windowed"]["window"] = comp_data["windowed"][
+                "window"
+            ].dt.strftime("%Y-%m-%d %H:%M")
             results_json[comp_id] = {
                 "spec_specific_power": comp_data["spec_specific_power"],
                 "windowed": comp_data["windowed"].to_dict(orient="records"),
             }
     return results_json
 
+
 def plot_efficiency_trends(windowed_results: dict):
-    
-    fig = make_subplots(rows=len(windowed_results), cols=1, shared_xaxes=True, subplot_titles=list(windowed_results.keys()))
+
+    fig = make_subplots(
+        rows=len(windowed_results),
+        cols=1,
+        shared_xaxes=True,
+        subplot_titles=list(windowed_results.keys()),
+    )
     for i, (comp_id, comp_data) in enumerate(windowed_results.items(), start=1):
         if "windowed" in comp_data:
             df = comp_data["windowed"]
-            fig.add_trace(go.Bar(x=df["window"], y=df["actual_specific_power"], name=f'{comp_id} Actual SP'), row=i, col=1)
-            fig.add_hline(y=comp_data["spec_specific_power"], line_dash="dash", line_color="red", annotation_text=f"{comp_data["spec_specific_power"]}", row=i, col=1)
+            fig.add_trace(
+                go.Bar(
+                    x=df["window"],
+                    y=df["actual_specific_power"],
+                    name=f"{comp_id} Actual SP",
+                ),
+                row=i,
+                col=1,
+            )
+            fig.add_hline(
+                y=comp_data["spec_specific_power"],
+                line_dash="dash",
+                line_color="red",
+                annotation_text=comp_data["spec_specific_power"],
+                row=i,
+                col=1,
+            )
             fig.update_yaxes(title_text="Specific Power (kW/CFM)", row=i, col=1)
-    fig.update_layout(height=300*len(windowed_results), title_text="Operational Efficiency Trends by Compressor", showlegend=False)
+    fig.update_layout(
+        height=300 * len(windowed_results),
+        title_text="Operational Efficiency Trends by Compressor",
+        showlegend=False,
+    )
     fig.write_html("temp/opr_eff.html")  # Save the plot as an HTML file
-
